@@ -1,0 +1,7 @@
+table_add ipv4_lpm ipv4_forward 10.0.1.1/32 => 00:00:00:00:01:01 2
+table_add ipv4_lpm ipv4_forward 10.0.2.2/32 => 00:00:00:00:02:02 3
+table_add ipv4_lpm ipv4_forward 10.0.3.3/32 => 00:00:00:00:03:03 1
+table_set_default logES do_logES
+table_set_default logES2 do_logES
+table_set_default logES_dec do_logES_dec
+table_set_default logES_dec2 do_logES_dec2
