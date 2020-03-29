@@ -120,7 +120,6 @@ control egress(inout headers hdr, inout metadata meta, inout standard_metadata_t
 
 
 register<bit<64>>(32w2)  thresholdReg;
-register<bit<64>>(32w1)  min;
 register<bit<64>>(32w1)  ewmaReg;
 
 control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
@@ -134,63 +133,6 @@ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_
     @name("._drop") action _drop() {
         mark_to_drop();
     }
-    action do_logES() {
-        meta.buc_val = meta.buc_sum | (meta.buc_sum >> 1);
-        meta.buc_val = meta.buc_val | (meta.buc_val >> 2);
-        meta.buc_val = meta.buc_val | (meta.buc_val >> 4);
-        meta.buc_val = meta.buc_val | (meta.buc_val >> 8);
-        meta.buc_val = meta.buc_val | (meta.buc_val >> 16);
-        meta.buc_val = meta.buc_val | (meta.buc_val >> 32);
-        meta.buc_val = (meta.buc_val & 64w0x5555555555555555) + ((meta.buc_val >> 1) & 64w0x5555555555555555);
-        meta.buc_val = (meta.buc_val & 64w0x3333333333333333) + ((meta.buc_val >> 2) & 64w0x3333333333333333);
-        meta.buc_val = (meta.buc_val & 64w0xf0f0f0f0f0f0f0f) + ((meta.buc_val >> 4) & 64w0xf0f0f0f0f0f0f0f);
-        meta.buc_val = (meta.buc_val & 64w0xff00ff00ff00ff) + ((meta.buc_val >> 8) & 64w0xff00ff00ff00ff);
-        meta.buc_val = (meta.buc_val & 64w0xffff0000ffff) + ((meta.buc_val >> 16) & 64w0xffff0000ffff);
-        meta.buc_val = (meta.buc_val & 64w0xffffffff) + ((meta.buc_val >> 32) & 64w0xffffffff);
-            }
-
-
-    action do_logES_dec() {
-            meta.log_sum = (bit<64>)((meta.buc_val - 64w1) << 10);
-           meta.buc_sumR1 = meta.buc_sum ^ (meta.buc_sum >> 8w1);
-           meta.buc_sumR2 = meta.buc_sum ^ (meta.buc_sum >> 8w2);
-            if (meta.buc_sum < meta.buc_sumR1 ){
-                if(meta.buc_sum > meta.buc_sumR2){
-                    meta.log_sum = meta.log_sum + 64w330;
-                }
-            }else {
-                if (meta.buc_sum < meta.buc_sumR2) {
-                    meta.log_sum = meta.log_sum + 64w599;
-                }
-            else {
-                meta.log_sum = meta.log_sum + 64w827;
-            }
-        }
-
-    }
-
-   action do_logES_dec2() {
-            meta.log_S = (bit<64>)((meta.buc_val - 64w1) << 10);
-           meta.buc_sumR1 = meta.buc_sum ^ (meta.buc_sum >> 8w1);
-           meta.buc_sumR2 = meta.buc_sum ^ (meta.buc_sum >> 8w2);
-            if (meta.buc_sum < meta.buc_sumR1 ){
-                if(meta.buc_sum > meta.buc_sumR2){
-                    meta.log_S = meta.log_S + 64w330;
-                }
-            }else {
-                if (meta.buc_sum < meta.buc_sumR2) {
-                    meta.log_S = meta.log_S + 64w599;
-                }
-            else {
-                meta.log_S = meta.log_S + 64w827;
-            }
-        }
-
-  
-    }
-
-      
-
 
     @name(".ipv4_lpm") table ipv4_lpm {
         actions = {
@@ -202,105 +144,38 @@ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_
         }
         size = 1024;
     }
-       table logES{
-        actions = {
-            do_logES;
-        }
-    }
-    table logES2{
-        actions = {
-            do_logES;
-        }
-    }
-     table logES_dec{
-        actions = {
-            do_logES_dec;
-        }
-    }
-    table logES_dec2{
-        actions = {
-            do_logES_dec2;
-        }
-    }
+
+
      apply {
-     // Hnorm obtained from P4Entropy
+     // Hnorm obtained from P4NEntropy
         bit<64> Hnorm;
-     // Number of source IPs obtained from P4LogLog
-        bit<64> nsrc;
-     // Number of destination IPs obtained from P4LogLog
-        bit<64> ndst;
+        Hnorm = 512;
 
     // threshold of N_norm
         bit<64> T_norm;
-    // threshold of T_asym
-        bit<64> T_asym;
-         
-        bit<64> log2nsrc;
-        bit<64> log2ndst;
-        bit<64> log2diff;
-        bit<64> eta_min;
-        bit<64> ewma;
-        bit<64> logdiff;
 
-        bit<1> Alarm_norm;
-        bit<1> Alarm_asym;
+        bit<64> ewma;
         bit<1> Alarm_ddos;
      
-     Alarm_norm = 0;
-     Alarm_asym = 0;
      Alarm_ddos = 0;
-     Hnorm = 512;
-     nsrc = 15346;
-     ndst = 12455;
      thresholdReg.read(T_norm, 0);
-     thresholdReg.read(T_asym, 1);
-     min.read(eta_min, 0);
      ewmaReg.read(ewma,0);
-     meta.buc_sum = nsrc;
-     logES.apply();
-     logES_dec.apply();
-     log2nsrc = meta.log_sum;
-     meta.buc_sum = ndst;
-     logES2.apply();
-     logES_dec2.apply();
-     log2ndst = meta.log_S;
-     logdiff = log2nsrc -log2ndst;
-     if(eta_min > 0){
-     if (logdiff > T_asym){
-            Alarm_asym = 1;
-     }else{
-        if(logdiff < eta_min){
-            eta_min = logdiff;
-        }
-           }
-     }else{
-        eta_min = logdiff;
-     }
-
-    min.write(0, eta_min);
-    // theta = 0.003
-    // log2(1+theta) = 4
-    T_asym = 4 + eta_min; 
-    thresholdReg.write(1, T_asym);
 
      if (Hnorm < T_norm){
-        Alarm_norm = 1;
+        Alarm_ddos = 1;
      }else{
         if (ewma > 0){
             // alpha = 0.13 << 10 = 133
+            // 1-alpha = 0.87 << 10 = 891
             ewma = 133*Hnorm + 891* ewma;
         }else{
             ewma = Hnorm;
         }
-        // epsilon = 0.002
-        T_norm = ewma - 2;
+        // epsilon = 0.01
+        T_norm = ewma - 10;
         ewmaReg.write(0, ewma);
         thresholdReg.write(0, T_norm);
      }
-     if (Alarm_norm == 1 && Alarm_asym == 1){
-        Alarm_ddos = 1;
-     }
-
         ipv4_lpm.apply();
       }
 }

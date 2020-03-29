@@ -26,7 +26,6 @@ echo "Switch 10.0.1.1"
 
 echo "displaying register"
 echo "register_read thresholdReg" | docker exec  -i hh simple_switch_CLI --thrift-port 22222
-echo "register_read min" | docker exec  -i hh simple_switch_CLI --thrift-port 22222
 echo "register_read ewmaReg" | docker exec  -i hh simple_switch_CLI --thrift-port 22222
 
 
