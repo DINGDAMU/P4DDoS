@@ -30,12 +30,11 @@ P4DDoS
     After this step you'll see the terminal of **mininet**
 2. Forwarding at least 1 packets in **mininet**
 
-Check the difference of entropy between
    ```
     pingall
     pingall
    ```
-and 
+or 
    ```
     h1 ping h2 -c 12 -i 0.1
    ```
@@ -53,9 +52,7 @@ and
     ./read_registers3.sh
    ```
  
- Register `thresholdReg[0]` is threshold for normalized entropy, and  `thresholdReg[1]` is the threshold of distinct flow asymmetry 
-
- Register `min[0]` is the current minimum distinct flow asymmetry.
+ Register `thresholdReg[0]` is threshold for normalized entropy
 
  Register `ewmaReg[0]` is the current expoenential weighter moving average of normalized entropy.
 
