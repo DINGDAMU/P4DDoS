@@ -1,3 +1,16 @@
+Citation
+--------
+```
+@article{ding2021tracking,
+  title={Tracking Normalized Network Traffic Entropy to Detect DDoS Attacks in P4},
+  author={Ding, Damu and Savi, Marco and Siracusa, Domenico},
+  journal={IEEE Transactions on Dependable and Secure Computing},
+  year={2021},
+  publisher={IEEE}
+}
+```
+
+
 Installation
 ------------
 
